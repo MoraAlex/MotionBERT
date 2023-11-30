@@ -7,6 +7,8 @@ import copy
 import pickle
 import ipdb
 import pandas as pd
+from scipy.sparse import csc_matrix
+import sys
 
 df = pd.read_csv('./data/AMASS/fps.csv', sep=',',header=None)
 fname_list = list(df[0][1:])
@@ -20,6 +22,51 @@ motion_data = pickle.load(file)
 J_reg = np.load(J_reg_dir)
 all_joints = []
 
+with open('data/AMASS/body_models/smplh/female/basicModel_f_lbs_10_207_0_v1.0.0.pkl', 'rb') as f:
+    data = pickle.load(f, encoding='latin1')
+    npz_data = {
+    'J_regressor_prior': data['J_regressor_prior'],
+    'f': data['f'],
+    'J_regressor': data['J_regressor'],
+    'kintree_table': data['kintree_table'],
+    'J': data['J'],
+    'weights_prior': data['weights_prior'],
+    'weights': data['weights'],
+    'vert_sym_idxs': data['vert_sym_idxs'],
+    'posedirs': data['posedirs'],
+    'pose_training_info': data['pose_training_info'],
+    'bs_style': data['bs_style'],
+    'v_template': data['v_template'],
+    'shapedirs': data['shapedirs']
+    }
+
+
+# Guardar datos en un archivo .npz
+np.savez('data/AMASS/body_models/smplh/female/model.npz', **npz_data)
+
+# Cargar datos desde un archivo .pkl
+with open('data/AMASS/body_models/smplh/male/basicmodel_m_lbs_10_207_0_v1.0.0.pkl', 'rb') as f:
+    data = pickle.load(f, encoding='latin1')
+    npz_data = {
+    'J_regressor_prior': data['J_regressor_prior'],
+    'f': data['f'],
+    'J_regressor': data['J_regressor'],
+    'kintree_table': data['kintree_table'],
+    'J': data['J'],
+    'weights_prior': data['weights_prior'],
+    'weights': data['weights'],
+    'vert_sym_idxs': data['vert_sym_idxs'],
+    'posedirs': data['posedirs'],
+    'pose_training_info': data['pose_training_info'],
+    'bs_style': data['bs_style'],
+    'v_template': data['v_template'],
+    'shapedirs': data['shapedirs']
+    }
+
+
+# Guardar datos en un archivo .npz
+np.savez('data/AMASS/body_models/smplh/male/model.npz', **npz_data)
+
 max_len = 2916
 with open('data/AMASS/clip_list.csv', 'w') as f:
     print('clip_id, fname, clip_len', file=f)
@@ -30,7 +77,7 @@ with open('data/AMASS/clip_list.csv', 'w') as f:
         subject_gender = bdata['gender']
         if (str(subject_gender) != 'female') and (str(subject_gender) != 'male'):
             subject_gender = 'female'
-
+        
         bm_fname = osp.join('data/AMASS/body_models/smplh/{}/model.npz'.format(subject_gender))
         dmpl_fname = osp.join('data/AMASS/body_models/dmpls/{}/model.npz'.format(subject_gender))
 
@@ -39,7 +86,7 @@ with open('data/AMASS/clip_list.csv', 'w') as f:
         # number of DMPL parameters
         num_dmpls = 8
 
-        bm = BodyModel(bm_fname=bm_fname, num_betas=num_betas, num_dmpls=num_dmpls, dmpl_fname=dmpl_fname).to(comp_device)
+        bm = BodyModel(bm_path=bm_fname, model_type='smplh', num_betas=num_betas, num_dmpls=num_dmpls, path_dmpl=dmpl_fname).to(comp_device)
         time_length = len(bdata['trans'])
         num_slice = time_length // max_len
 
