@@ -278,7 +278,10 @@ def train_with_config(args, opts):
             chk_filename = opts.evaluate if opts.evaluate else opts.resume
             print('Loading checkpoint', chk_filename)
             checkpoint = torch.load(chk_filename, map_location=lambda storage, loc: storage)
-            model_backbone.load_state_dict(checkpoint['model_pos'], strict=True)
+
+            state_dict = {key.replace('module.', ''): value for key, value in checkpoint['model_pos'].items()}
+
+            model_backbone.load_state_dict(state_dict, strict=True)
         model_pos = model_backbone
         
     if args.partial_train:
